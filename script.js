@@ -6,34 +6,67 @@ function dataLoaded(err,rows){
 
     //Step 1: start with the basics: nest, or group, trips with the same starting stations
     //Using d3.nest()...entries()
-
+    var tripsByStation = d3.nest()
+                           .key(function(d){return d.startStation})
+                           .entries(rows);
+         
+                           console.log(tripsByStation);
 
     //Step 2: do the same as above, but instead of .entries(), use .map()
     //How does this compare?
+     var tripsByStartStation = d3.nest()
+                                 .key(function(d){return d.startStation})
+                                 .map(rows, d3.map);
+
+                                 console.log(tripsByStartStation);
 
     //Step 3: simple two level nest
     //Nest trips with the same starting stations
     //Under each station, further nest trips into two groups: those by registered vs. casual users
     //Hint: casual users are those with no birth date, gender, or zip code information
+    var tripsByRegisterGroup = d3.nest()
+                                 .key(function(d){return d.startStation})
+                                 .key(function(d){return d.register}) // there is a hierachy order of these two 'key' function
+                                 .entries(rows);
 
+                                 console.log(tripsByRegisterGroup);
 
     //Step 4: simple two level nest
     //Same as above, but instead of returning nested trips as sub-arrays, return two numbers:
     //total count of registered trips, vs. casual trips
+     var tripsByRegisterGroupNumber = d3.nest()
+                                 .key(function(d){return d.startStation})
+                                 .key(function(d){return d.register})
+                                 .rollup(function(d){return d.length})// key function is priority to the rollup function??
+                                 .entries(rows)
 
+                                 console.log(tripsByRegisterGroupNumber);
 
     //Step 5: group trips with the same starting stations, BUT only for 2012
     //Do this without crossfilter
     //Hint: first you have to use array.filter() to reduce all trips to a smaller subset
     //Then you nest the smaller array
+    var checkYear = function(d){
+            return d.startTime.getFullYear() == '2012';     
+    }
 
+    var filtered = rows.filter(checkYear);
+    var tripsByStation2012 = d3.nest()
+                         .key(function(d){return d.startStation})
+                         .entries(filtered);
+
+                         console.log(tripsByStation2012);
 
     //Step 6: do the same, but with crossfilter
     //How does this compare to step 5?
+   trips = crossfilter(rows);
+   var tripByYear = trips.dimension(function(d){return d.startTime});
+   var tripByStation = trips.dimension(function(d){return d.startStation});
 
-
-
-
+   tripByYear.filter([new Date(2012,0,01),new Date(2013,0,01)]);
+   tripByStationGroup = tripByStation.group(function(d){return d.valueOf()});
+   
+   console.log(tripByStationGroup.all()); // is that in 'alphabet' order??
 
 
 }
@@ -48,7 +81,8 @@ function parse(d){
         startStation: d.strt_statn,
         endStation: d.end_statn,
         userAge: d.birth_date?parseDate(d.start_date).getFullYear()- (+d.birth_date):0,
-        gender:d.gender? d.gender:"Unknown"
+        gender:d.gender? d.gender:"Unknown",
+        register: d.subsc_type
     }
 }
 
